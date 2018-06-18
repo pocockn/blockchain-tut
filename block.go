@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"time"
 )
 
@@ -14,6 +16,16 @@ type (
 		Hash          []byte
 	}
 )
+
+// DeserializeBlock deserializes a serialized block and returns it.
+func DeserializeBlock(serializedBlock []byte) *Block {
+	var block Block
+
+	decoder := gob.NewDecoder(bytes.NewReader(serializedBlock))
+	decoder.Decode(&block)
+
+	return &block
+}
 
 // NewBlock creates and returns a new Block struct.
 func NewBlock(data string, prevBlockHash []byte) *Block {
@@ -30,4 +42,14 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 	block.Nonce = nonce
 
 	return block
+}
+
+// Serialize serializes a block into an array of bytes.
+func (b *Block) Serialize() []byte {
+	var result bytes.Buffer
+	encoder := gob.NewEncoder(&result)
+
+	encoder.Encode(b)
+
+	return result.Bytes()
 }
