@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/dgraph-io/badger"
 )
@@ -11,30 +10,35 @@ const blocksBucket = "blocks"
 
 // Blockchain holds the blocks that make up the blockchain.
 type Blockchain struct {
-	db *badger.DB
+	db  *badger.DB
+	tip []byte
 }
 
 // NewBlockchain creates and returns a new Blockchain struct.
-func NewBlockchain(DBService *badger.DB) *Blockchain {
-	//var tip []byte
+func NewBlockchain(DBService *badger.DB) (*Blockchain, error) {
+	var tip []byte
 	genesis := NewGenesisBlock()
-
-	fmt.Printf("hash is %+v \n \n", genesis.Hash)
-	fmt.Printf("serialized block is %+v \n \n", genesis.Serialize())
 
 	txn := DBService.NewTransaction(true)
 	defer txn.Discard()
 
 	item, err := txn.Get(genesis.Hash)
-	if err != nil {
-		log.Fatal("Urgh can't find it")
+	if err == badger.ErrKeyNotFound {
+		fmt.Printf("Genesis block not found in DB, creating it now.")
+		tip = genesis.Hash
+		err = txn.Set(genesis.Hash, genesis.Serialize())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fmt.Printf("Genesis block found in DB, setting Blockchain tip to the Genesis hash.")
+		tip = item.Key()
 	}
-
-	fmt.Printf("item %+v", item)
 
 	return &Blockchain{
-		db: DBService,
-	}
+		db:  DBService,
+		tip: tip,
+	}, nil
 }
 
 // AddBlock adds a block to the blockchain.

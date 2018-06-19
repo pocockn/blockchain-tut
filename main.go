@@ -6,7 +6,10 @@ import (
 
 func main() {
 	db := GetDBService().GetDB()
-	bc := NewBlockchain(db)
+	bc, err := NewBlockchain(db)
+	if err != nil {
+		fmt.Printf("Fatal Error")
+	}
 	fmt.Printf("Blockchain: %+v\n", bc)
 
 	// bc.AddBlock("Send 1 BTC to Someone")
